@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.pedropathing.control.FilteredPIDFCoefficients;
+import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
@@ -18,7 +20,11 @@ public class Constants {
             //.mass(9.752236);
             .mass(10.5)
             .forwardZeroPowerAcceleration(-41.57469715228642)
-            .lateralZeroPowerAcceleration(-63.35181674456222);
+            .lateralZeroPowerAcceleration(-63.35181674456222)
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.075,0,0.006,0.02))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.73, 0, 0.03, 0.024))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.3,0.0,0.00001,0.6,0.01))
+            .centripetalScaling(0.0006);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -45,7 +51,11 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(
+            0.995,
+            100,
+            1.15,
+            1);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)

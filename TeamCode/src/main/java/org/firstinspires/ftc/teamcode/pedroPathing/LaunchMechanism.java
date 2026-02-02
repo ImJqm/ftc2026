@@ -27,8 +27,8 @@ public class LaunchMechanism extends OpMode {
 
     DcMotor intakeMotor;
     DcMotor midtakeMotor;
-    DcMotor outakeMotor;
-
+    DcMotor topMotor;
+    DcMotor sideMotor;
     Toggle aToggle = new Toggle();
     Toggle bToggle = new Toggle();
 
@@ -39,6 +39,7 @@ public class LaunchMechanism extends OpMode {
     Toggle aToggle2 = new Toggle();
 
     Toggle upToggle = new Toggle();
+    Toggle bToggle2 = new Toggle();
     boolean intakeMode;
 
     boolean slowmode = false;
@@ -48,11 +49,13 @@ public class LaunchMechanism extends OpMode {
     boolean counterActuating;
     int servoCount = 0;
 
-    double outtakePower = 0.65;
+    double outtakePower = 0.55;
 
     boolean launching1 = false;
     boolean launching2 = false;
     boolean actuating = false;
+
+    boolean reverse = true;
 
 
     @Override
@@ -65,12 +68,20 @@ public class LaunchMechanism extends OpMode {
 
         intakeMotor = hardwareMap.get(DcMotor.class, "vmotor1");
         midtakeMotor = hardwareMap.get(DcMotor.class, "vmotor2");
-        outakeMotor = hardwareMap.get(DcMotor.class, "vmotor3");
-
+        topMotor = hardwareMap.get(DcMotor.class, "topLauncher");
+        sideMotor = hardwareMap.get(DcMotor.class, "sideLauncher");
         motorBL.setDirection(DcMotorSimple.Direction.REVERSE);
         motorFrL.setDirection(DcMotorSimple.Direction.REVERSE);
         midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        outakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        motorBL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorFrL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorBR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorFrR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        sideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        topMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         outTakeServo = hardwareMap.get(Servo.class, "servo0");
         outTakeServo.setPosition(0.43);
@@ -121,27 +132,45 @@ public class LaunchMechanism extends OpMode {
 
 
 
-        if (gamepad1.y && !launching2 && !launching1) {
+        if (gamepad1.dpad_up && !launching2 && !launching1) {
             launching1 = true;
-            midtakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-            midtakeMotor.setPower(1.0);
+            midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+            midtakeMotor.setPower(0.0);
+            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            intakeMotor.setPower(0.0);
             count = 0;
-        } else if (count < 10 && launching1) {
-            midtakeMotor.setPower(1.0);
-        } else if (count < 40 && launching1) {
+        } else if (count < 50 && launching1) {
+            midtakeMotor.setPower(0.0);
+            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            intakeMotor.setPower(0.0);
+        } else if (count < 80 && launching1) {
             midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
             midtakeMotor.setPower(1.0);
+            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            intakeMotor.setPower(1.0);
         }else if (count >= 40){
             launching1 = false;
+            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            intakeMotor.setPower(0.0);
             midtakeMotor.setPower(0.0);
         }
 
-
+        reverse = bToggle2.update(gamepad2.b);
+        telemetry.addData("Reverse BooL:", reverse);
+        telemetry.addData("Intake Dir:", intakeMotor.getDirection());
+        telemetry.addData("MidTake Dir:", midtakeMotor.getDirection());
         if (gamepad2.right_trigger > 0.3 && !launching2 && !launching1) {
+            if (!reverse) {
+                intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+                midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+            } else {
+                intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+                midtakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            }
             launching2 = true;
-            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+
             intakeMotor.setPower(1.0);
-            midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
             midtakeMotor.setPower(1.0);
             count = 0;
         } else if (count < 40 && launching2) {
@@ -164,7 +193,7 @@ public class LaunchMechanism extends OpMode {
             outTakeServo.setPosition(0.2);
             servoCount = 0;
         } else if (servoCount < 40 && actuating) {
-            outTakeServo.setPosition(0.2);
+            outTakeServo.setPosition(0.1);
         } else  if (servoCount >= 40) {
             actuating = false;
             outTakeServo.setPosition(0.43);
@@ -183,8 +212,8 @@ public class LaunchMechanism extends OpMode {
 
         //intakeMotor.setPower(aToggle.update(gamepad1.a) ? 1.0 : 0.0);
         //midtakeMotor.setPower(aToggle.update(gamepad1.a) ? 1.0 : 0.0);
-        outakeMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
-
+        topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
+        sideMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
         double rotX = x * Math.cos(-botHeading) - y* Math.sin(-botHeading);
