@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.Toggle;
+import org.firstinspires.ftc.teamcode.pedroPathing.Toggle;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
@@ -84,7 +84,7 @@ public class LaunchMechanism extends OpMode {
         topMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         outTakeServo = hardwareMap.get(Servo.class, "servo0");
-        outTakeServo.setPosition(0.43);
+        outTakeServo.setPosition(0.33);
 
 
         imu = hardwareMap.get(IMU.class, "imu");
@@ -97,6 +97,8 @@ public class LaunchMechanism extends OpMode {
 
     @Override
     public void loop() {
+
+
 
 
         slowmode = aToggle2.update(gamepad2.a);
@@ -182,7 +184,7 @@ public class LaunchMechanism extends OpMode {
             intakeMotor.setPower(0.0);
         }
 
-        //telemetry.addData("Middle Motor Power: ", rbToggle.update(gamepad1.right_bumper) ? 0.5 : 1.0);
+
 
         countercount++;
         count++;
@@ -190,13 +192,13 @@ public class LaunchMechanism extends OpMode {
 
         if (gamepad1.dpad_up && !actuating) {
             actuating = true;
-            outTakeServo.setPosition(0.2);
+            outTakeServo.setPosition(0.1);
             servoCount = 0;
         } else if (servoCount < 40 && actuating) {
             outTakeServo.setPosition(0.1);
         } else  if (servoCount >= 40) {
             actuating = false;
-            outTakeServo.setPosition(0.43);
+            outTakeServo.setPosition(0.33);
         }
 
         if (outtakePower >1.0) {
@@ -207,13 +209,18 @@ public class LaunchMechanism extends OpMode {
 
         servoCount++;
 
-        //outTakeServo.setPosition(upToggle.update(gamepad1.dpad_up) ? 0.2: 0.43);
+
         telemetry.addData("Servo: ", outTakeServo.getPosition());
 
-        //intakeMotor.setPower(aToggle.update(gamepad1.a) ? 1.0 : 0.0);
-        //midtakeMotor.setPower(aToggle.update(gamepad1.a) ? 1.0 : 0.0);
-        topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
+
+
+        //FLYWHEEL
+         topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
         sideMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
+
+
+
+
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
         double rotX = x * Math.cos(-botHeading) - y* Math.sin(-botHeading);

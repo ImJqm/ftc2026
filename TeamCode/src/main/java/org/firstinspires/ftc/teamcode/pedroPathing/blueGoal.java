@@ -20,6 +20,10 @@ public class blueGoal extends OpMode {
     private Follower follower;
 
 
+    private Flywheel flywheel = new Flywheel();
+
+    private boolean shooting = false;
+
 
     private Timer pathTimer;
 
@@ -29,7 +33,9 @@ public class blueGoal extends OpMode {
         //startPos_endPos
 
         DRIVE_STARTPOS_SHOOT_POS,
-        SHOOT_PRELOAD
+        SHOOT_PRELOAD,
+
+        SHOOT_POS_END_POS,
 
     }
 
@@ -40,12 +46,21 @@ public class blueGoal extends OpMode {
 
     private final Pose shootPose = new Pose(54.436906377204885, 84.45590230664857, Math.toRadians(310));
 
+    private final Pose endPose = new Pose(71.82632293080054, 74.04070556309362, Math.toRadians(90));
+
     private PathChain driveStartshoot;
+
+    private PathChain driveShootend;
 
     public void buildPaths() {
         driveStartshoot = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, shootPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), shootPose.getHeading())
+                .build();
+
+        driveShootend = follower.pathBuilder()
+                .addPath(new BezierLine(shootPose, endPose))
+                .setLinearHeadingInterpolation(shootPose.getHeading(), endPose.getHeading())
                 .build();
     }
 
@@ -58,10 +73,20 @@ public class blueGoal extends OpMode {
             case SHOOT_PRELOAD:
                 if (!follower.isBusy()) {
                     //TODO: FLYWHEEL SHOOT
-                    telemetry.addLine("flywheel shoot");
+                    if (!shooting) {
+                        flywheel.fireShots(3);
+                        shooting = true;
+                    } else if (shooting && !flywheel.isBusy()) {
+                        shooting = false;
+                        telemetry.addLine("Finished Shooting");
+                        follower.followPath(driveShootend, true);
+                        setPathState(PathState.SHOOT_POS_END_POS);
+                    }
                 }
                 break;
                 //transition to next state
+            case SHOOT_POS_END_POS:
+
             default:
                 telemetry.addLine("No State Selected");
                 break;
@@ -72,9 +97,9 @@ public class blueGoal extends OpMode {
         pathState = newState;
         telemetry.addLine("Path took " + pathTimer.getElapsedTimeSeconds());
         pathTimer.resetTimer();;
+
+        shooting = false;
     }
-
-
 
     @Override
     public void init() {
@@ -82,6 +107,8 @@ public class blueGoal extends OpMode {
         pathTimer = new Timer();
         opModeTimer = new Timer();
         follower = Constants.createFollower(hardwareMap);
+
+        flywheel.init(hardwareMap);
 
         buildPaths();
         follower.setPose(startPose);
@@ -96,8 +123,12 @@ public class blueGoal extends OpMode {
     @Override
     public void loop() {
         follower.update();
+        flywheel.update();
         statePathUpdate();
 
+        telemetry.addData("Top Motor Velocity:", flywheel.getVelocity(0));
+        telemetry.addData("Side Motor Velocity:", flywheel.getVelocity(1));
+        telemetry.addData("Flywheel State: ", flywheel.getState());
         telemetry.addData("Path State: ", pathState.toString());
         telemetry.addData("X: ", follower.getPose().getX());
         telemetry.addData("Y: ", follower.getPose().getY());
