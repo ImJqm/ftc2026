@@ -1,4 +1,10 @@
+package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
 
 @TeleOp(name = "Turret Tuner")
@@ -8,13 +14,23 @@ public class turretTuner extends OpMode{
     DcMotorEx motorBevel;
     double lastTime;
 
+    Servo outTakeServo;
+
+    double amount;
+
+    turretPIDF tuner;
+
     @Override
     public void init() {
         // Initialize the turretPIDF
-        DcMotorEx motorChain = hardwareMap.get(DcMotorEx.class, "topLauncher");
-        DcMotorEx motorBevel = hardwareMap.get(DcMotorEx.class, "sideLauncher");
+        motorChain = hardwareMap.get(DcMotorEx.class, "topLauncher");
+        motorChain.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorBevel = hardwareMap.get(DcMotorEx.class, "sideLauncher");
         tuner = new turretPIDF(motorChain, motorBevel);
         lastTime = getRuntime();
+        outTakeServo = hardwareMap.get(Servo.class, "servo0");
+        outTakeServo.setPosition(0.33);
+        amount = 0.0;
     }
 
     @Override
@@ -29,12 +45,25 @@ public class turretTuner extends OpMode{
 
         // Joystick input (-1 to 1)
         double joystick = gamepad1.right_stick_x;
+        telemetry.addData("Right Joy Stik:", joystick);
+        telemetry.addData("dt:", dt);
+        telemetry.addData("Command Velocity:", tuner.getCommandedVelocity());
+        telemetry.addData("Target Velocity:", tuner.getTargetVelocity());
+        telemetry.addData("Amount:", amount);
+        if (gamepad1.rightBumperWasPressed()) {
+            amount+=1.0;
+        }
+        if (gamepad1.leftBumperWasPressed()) {
+            amount-=1.0;
+        }
+
+        outTakeServo.setPosition(gamepad1.dpad_up ? 0.1 : 0.33);
 
         // Max turret angular velocity (rad/s)
-        double maxOmega = 3.0;
+        double maxOmega = 100 * Math.PI*2.0;
 
         // Target angular velocity
-        double targetOmega = joystick * maxOmega;
+        double targetOmega = amount/100 * joystick * maxOmega;
 
         // Update velocity controller
         tuner.update(targetOmega, dt);

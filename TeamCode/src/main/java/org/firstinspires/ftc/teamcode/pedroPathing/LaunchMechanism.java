@@ -215,7 +215,7 @@ public class LaunchMechanism extends OpMode {
 
 
         //FLYWHEEL
-         topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
+        topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
         sideMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
 
 

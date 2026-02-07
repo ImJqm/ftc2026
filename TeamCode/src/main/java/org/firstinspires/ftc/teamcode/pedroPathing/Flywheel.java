@@ -64,8 +64,8 @@ public class Flywheel {
         topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        sideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //sideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         flywheelState = wheelState.IDLE;
         outTakeServo.setPosition(servoRest);
@@ -82,11 +82,11 @@ public class Flywheel {
 
 
 
-                    //topMotor.setPower(flywheelShootPower);
-                    //sideMotor.setPower(flywheelShootPower);
+                    topMotor.setPower(flywheelShootPower);
+                    sideMotor.setPower(flywheelShootPower);
 
-                    topMotor.setVelocity(ticks*targetRPS);
-                    sideMotor.setVelocity(ticks*targetRPS);
+                    //topMotor.setVelocity(ticks*targetRPS);
+                    //sideMotor.setVelocity(ticks*targetRPS);
 
 
                     //Here we want to make the motor aim for its target velocity
@@ -102,8 +102,8 @@ public class Flywheel {
                 break;
             case SPINUP:
                 //set velocity again if want
-                topMotor.setVelocity(ticks*targetRPS);
-                sideMotor.setVelocity(ticks*targetRPS);
+                //topMotor.setVelocity(ticks*targetRPS);
+                //sideMotor.setVelocity(ticks*targetRPS);
 
 
 
@@ -126,8 +126,10 @@ public class Flywheel {
                         flywheelState = wheelState.SPINUP;
 
                     } else {
-                        topMotor.setVelocity(0.0);
-                        sideMotor.setVelocity(0.0);
+                       // topMotor.setVelocity(0.0);
+                        // sideMotor.setVelocity(0.0);
+                        topMotor.setPower(0.0);
+                        sideMotor.setPower(0.0);
                         outTakeServo.setPosition(servoRest);
                         stateTimer.reset();
                         ;
@@ -155,10 +157,12 @@ public class Flywheel {
     public Double getVelocity(int index) {
         switch (index) {
             case 0: //Top Motor
-                return (topMotor.getVelocity()*60/ticks);
+              //  return (topMotor.getVelocity()*60/ticks);
+                return (sideMotor.getPower());
 
             case 1: //Side Motor
-                return (sideMotor.getVelocity()*60/ticks);
+//                return (sideMotor.getVelocity()*60/ticks);
+                return (sideMotor.getPower());
 
             default:
                 return 0.0;
