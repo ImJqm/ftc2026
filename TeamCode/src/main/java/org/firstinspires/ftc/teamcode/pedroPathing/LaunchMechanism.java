@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -18,7 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 public class LaunchMechanism extends OpMode {
 
     Servo outTakeServo;
-
+    turretPIDF tuner;
     IMU imu;
     DcMotor motorFrL;
     DcMotor motorFrR;
@@ -27,8 +28,10 @@ public class LaunchMechanism extends OpMode {
 
     DcMotor intakeMotor;
     DcMotor midtakeMotor;
-    DcMotor topMotor;
-    DcMotor sideMotor;
+    DcMotorEx topMotor;
+    DcMotorEx sideMotor;
+
+    double lastTime;
     Toggle aToggle = new Toggle();
     Toggle bToggle = new Toggle();
 
@@ -43,6 +46,8 @@ public class LaunchMechanism extends OpMode {
     boolean intakeMode;
 
     boolean slowmode = false;
+
+    double amount = 1.0;
     int count = 0;
 
     int countercount;
@@ -55,7 +60,37 @@ public class LaunchMechanism extends OpMode {
     boolean launching2 = false;
     boolean actuating = false;
 
+    public enum PIDFINCREMENT {
+        P {
+            @Override
+            public PIDFINCREMENT nextState() {
+                return I;
+            }
+        },
+        I {
+            @Override
+            public PIDFINCREMENT nextState() {
+                return D;
+            }
+        },
+        D {
+            @Override
+            public PIDFINCREMENT nextState() {
+                return P;
+            }
+        };
+
+        public abstract PIDFINCREMENT nextState() ;
+    }
+
+    PIDFINCREMENT pidf;
+
     boolean reverse = true;
+
+    double maxOmega = 100 * Math.PI * 2.0;
+    double targetOmega = amount * maxOmega;
+
+    boolean shooting = false;
 
 
     @Override
@@ -68,8 +103,8 @@ public class LaunchMechanism extends OpMode {
 
         intakeMotor = hardwareMap.get(DcMotor.class, "vmotor1");
         midtakeMotor = hardwareMap.get(DcMotor.class, "vmotor2");
-        topMotor = hardwareMap.get(DcMotor.class, "topLauncher");
-        sideMotor = hardwareMap.get(DcMotor.class, "sideLauncher");
+        topMotor = hardwareMap.get(DcMotorEx.class, "topLauncher");
+        sideMotor = hardwareMap.get(DcMotorEx.class, "sideLauncher");
         motorBL.setDirection(DcMotorSimple.Direction.REVERSE);
         motorFrL.setDirection(DcMotorSimple.Direction.REVERSE);
         midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -80,11 +115,13 @@ public class LaunchMechanism extends OpMode {
         motorBR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         motorFrR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        sideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        topMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
+        tuner = new turretPIDF(topMotor, sideMotor);
+        lastTime = getRuntime();
         outTakeServo = hardwareMap.get(Servo.class, "servo0");
         outTakeServo.setPosition(0.33);
+
+        pidf = PIDFINCREMENT.P;
 
 
         imu = hardwareMap.get(IMU.class, "imu");
@@ -100,6 +137,10 @@ public class LaunchMechanism extends OpMode {
 
 
 
+        shooting = bToggle.update(gamepad1.b);
+        targetOmega = ((shooting) ? 1.0 : 0.0) * maxOmega * amount;
+        tuner.update(targetOmega);
+
 
         slowmode = aToggle2.update(gamepad2.a);
 
@@ -107,28 +148,46 @@ public class LaunchMechanism extends OpMode {
         double x = gamepad2.left_stick_x;
         double rx = gamepad2.right_stick_x;
 
+
+
         if (gamepad2.options) {
             imu.resetYaw();
         }
+       // telemetry.addData("Commanded Velocity:, ", tuner.getCommandedVelocity());
+        telemetry.addData("Target Velocity:, ", tuner.getTargetVelocity());
+        telemetry.addData("Alleged Measured Velocity:, ", tuner.getMeasuredVelocity());
+        telemetry.addData("Top Motor Velocity:", topMotor.getVelocity());
+        telemetry.addData("Side Motor Velocity:", sideMotor.getVelocity());
         telemetry.addData("Gamepad y: ", gamepad1.y);
         telemetry.addData("Launching: ", launching2 );
         telemetry.addData("Direction of Midtake: ", midtakeMotor.getDirection());
-        telemetry.addData("Outtake Power", outtakePower);
+        telemetry.addData("Outtake Amount", amount);
+        telemetry.addData("PIDF: P ", tuner.getP());
+        telemetry.addData("PIDF: I ", tuner.getI());
+        telemetry.addData("PIDF: D ", tuner.getD());
+
+        if (Math.abs(sideMotor.getVelocity()) > 1200 && Math.abs(topMotor.getVelocity()) > 1200) {
+            gamepad1.rumbleBlips(3);
+        } else {
+            gamepad1.rumbleBlips(0);
+        }
 
 
         if (gamepad1.right_bumper && !counterActuating) {
             counterActuating = true;
             countercount = 0;
-            outtakePower+=0.05;
-        } else if (countercount>30) {
+           // outtakePower+=0.05;
+            amount+=0.01;
+        } else if (countercount>1) {
             counterActuating = false;
         }
 
         if (gamepad1.left_bumper && !counterActuating) {
             counterActuating = true;
             countercount = 0;
+            amount-=0.01;
             outtakePower-=0.05;
-        } else if (countercount>30) {
+        } else if (countercount>1) {
             counterActuating = false;
         }
 
@@ -141,7 +200,7 @@ public class LaunchMechanism extends OpMode {
             intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
             intakeMotor.setPower(0.0);
             count = 0;
-        } else if (count < 50 && launching1) {
+        } else if (count < 20 && launching1) {
             midtakeMotor.setPower(0.0);
             intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
             intakeMotor.setPower(0.0);
@@ -150,7 +209,7 @@ public class LaunchMechanism extends OpMode {
             midtakeMotor.setPower(1.0);
             intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
             intakeMotor.setPower(1.0);
-        }else if (count >= 40){
+        }else if (count >= 20){
             launching1 = false;
             intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
             intakeMotor.setPower(0.0);
@@ -175,10 +234,10 @@ public class LaunchMechanism extends OpMode {
 
             midtakeMotor.setPower(1.0);
             count = 0;
-        } else if (count < 40 && launching2) {
+        } else if (count < 40 && launching2 && !launching1) {
             midtakeMotor.setPower(1.0);
             intakeMotor.setPower(1.0);
-        }else if (count >= 40){
+        }else if (count >= 40 && !launching1){
             launching2 = false;
             midtakeMotor.setPower(0.0);
             intakeMotor.setPower(0.0);
@@ -194,9 +253,9 @@ public class LaunchMechanism extends OpMode {
             actuating = true;
             outTakeServo.setPosition(0.1);
             servoCount = 0;
-        } else if (servoCount < 40 && actuating) {
+        } else if (servoCount < 10 && actuating) {
             outTakeServo.setPosition(0.1);
-        } else  if (servoCount >= 40) {
+        } else  if (servoCount >= 10) {
             actuating = false;
             outTakeServo.setPosition(0.33);
         }
@@ -209,17 +268,42 @@ public class LaunchMechanism extends OpMode {
 
         servoCount++;
 
+        if (gamepad1.leftStickButtonWasPressed()) {
+            pidf = pidf.nextState();
+        }
+
+        if (gamepad1.dpadRightWasPressed()) {
+            switch (pidf) {
+                case P:
+                    tuner.changeP(0.01);
+                    break;
+                case I:
+                    tuner.changeI(0.01);
+                    break;
+                case D:
+                    tuner.changeD(0.01);
+                    break;
+            }
+        } else if (gamepad1.dpadLeftWasPressed()) {
+            switch (pidf) {
+                case P:
+                    tuner.changeP(-0.01);
+                    break;
+                case I:
+                    tuner.changeI(-0.01);
+                    break;
+                case D:
+                    tuner.changeD(-0.01);
+                    break;
+            }
+        }
+
 
         telemetry.addData("Servo: ", outTakeServo.getPosition());
 
-
-
         //FLYWHEEL
-        topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
-        sideMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
-
-
-
+        //topMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
+        //sideMotor.setPower(bToggle.update(gamepad1.b) ? outtakePower : 0.0);
 
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -246,15 +330,6 @@ public class LaunchMechanism extends OpMode {
             motorBL.setPower(backLeftPower);
             motorBR.setPower(backRightPower);
         }
-        //motorFrL.setPower(frontLeftPower);
-        //motorFrR.setPower((frontRightPower));
-        //motorBL.setPower(backLeftPower);
-        //motorBR.setPower(backRightPower);
-
-
-
-
-
     }
 
 

@@ -47,10 +47,17 @@ public class Flywheel {
 
     private double flywheelShootPower = 0.55;
 
+    turretPIDF tuner;
+
     //Time:
-    private double flywheelAccelTime = 1.4; //seconds
+    private double flywheelAccelTime = 2.0; //seconds
 
     private double servoActuateTime = 0.9;
+
+    double amount = 23.0;
+
+    double maxOmega = 100 * Math.PI*2.0;
+    double targetOmega = amount/100 * maxOmega;
 
     public void init(HardwareMap hardwareMap) {
         outTakeServo = hardwareMap.get(Servo.class, "servo0");
@@ -67,11 +74,14 @@ public class Flywheel {
         //topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         //sideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        tuner = new turretPIDF(topMotor, sideMotor);
+
         flywheelState = wheelState.IDLE;
         outTakeServo.setPosition(servoRest);
     }
 
-    public void update() {
+    public void update(double dt) {
+
 
         switch (flywheelState) {
             case IDLE:
@@ -80,24 +90,21 @@ public class Flywheel {
 
                     outTakeServo.setPosition(servoRest);
 
+                    //tuner.update( targetOmega * 1.0, dt);
 
-
-                    topMotor.setPower(flywheelShootPower);
-                    sideMotor.setPower(flywheelShootPower);
+                    //topMotor.setPower(flywheelShootPower);
+                    //sideMotor.setPower(flywheelShootPower);
 
                     //topMotor.setVelocity(ticks*targetRPS);
                     //sideMotor.setVelocity(ticks*targetRPS);
 
 
                     //Here we want to make the motor aim for its target velocity
-
-
-
-
-
                     stateTimer.reset();
 
                     flywheelState = wheelState.SPINUP;
+                } else {
+                    //tuner.update(targetOmega * 0.0, dt);
                 }
                 break;
             case SPINUP:
@@ -106,7 +113,7 @@ public class Flywheel {
                 //sideMotor.setVelocity(ticks*targetRPS);
 
 
-
+                //tuner.update(targetOmega * 1.0, dt);
                 if (/*flywheel velocity > min vel*/ /*(topMotor.getVelocity() > (ticks*minRPS) && sideMotor.getVelocity() > (ticks*minRPS))   ||*/stateTimer.seconds() > flywheelAccelTime) {
                     outTakeServo.setPosition(servoActuate);
                     shotsRemaining--;
@@ -120,21 +127,26 @@ public class Flywheel {
                         if (shotsRemaining == 1) {
                             midtakeMotor.setPower(1.0);
                         }
-
+                      //  tuner.update( targetOmega * 1.0, dt);
                         outTakeServo.setPosition(servoRest);
                         stateTimer.reset();
                         flywheelState = wheelState.SPINUP;
 
+
+
                     } else {
                        // topMotor.setVelocity(0.0);
                         // sideMotor.setVelocity(0.0);
-                        topMotor.setPower(0.0);
-                        sideMotor.setPower(0.0);
+                        //topMotor.setPower(0.0);
+                        //sideMotor.setPower(0.0);
+                     //   tuner.update( targetOmega * 0.0, dt);
                         outTakeServo.setPosition(servoRest);
                         stateTimer.reset();
-                        ;
+
                         flywheelState = wheelState.IDLE;
                     }
+                } else {
+                  //  tuner.update( targetOmega, dt);
                 }
                 break;
         }
@@ -154,8 +166,10 @@ public class Flywheel {
         return flywheelState.toString();
     }
 
-    public Double getVelocity(int index) {
-        switch (index) {
+    public Double getCommandedVelocity() {
+
+       // return tuner.getCommandedVelocity();
+        /*switch (index) {
             case 0: //Top Motor
               //  return (topMotor.getVelocity()*60/ticks);
                 return (sideMotor.getPower());
@@ -167,7 +181,12 @@ public class Flywheel {
             default:
                 return 0.0;
 
-        }
+        }*/
+        return 1.0;
+    }
+
+    public Double getTargetVelocity() {
+        return tuner.getTargetVelocity();
     }
 
 

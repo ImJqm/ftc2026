@@ -34,7 +34,7 @@ public class redHalf extends OpMode {
 
         intakeMotor = hardwareMap.get(DcMotor.class, "vmotor1");
         midtakeMotor = hardwareMap.get(DcMotor.class, "vmotor2");
-        outakeMotor = hardwareMap.get(DcMotor.class, "vmotor3");
+        //outakeMotor = hardwareMap.get(DcMotor.class, "vmotor3");
 
         motorBR.setDirection(DcMotorSimple.Direction.REVERSE);
         motorFrR.setDirection(DcMotorSimple.Direction.REVERSE);

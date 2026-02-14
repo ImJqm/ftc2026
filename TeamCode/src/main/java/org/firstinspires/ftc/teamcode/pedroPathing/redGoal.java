@@ -14,8 +14,8 @@ import org.firstinspires.ftc.robotcore.external.Const;
 
 import java.nio.file.Path;
 
-@Autonomous(name = "blueGoal")
-public class blueGoal extends OpMode {
+@Autonomous(name = "redGoal")
+public class redGoal extends OpMode {
 
     private Follower follower;
 
@@ -42,17 +42,17 @@ public class blueGoal extends OpMode {
 
     public PathState pathState;
 
-    private final Pose startPose = new Pose(21.9, 124.77526693045954, Math.toRadians(324));
+    private final Pose startPose = new Pose(122.19538670284939, 124.77526693045954, Math.toRadians(216));
 
-    private final Pose shootPose = new Pose(54.436906377204885, 84.45590230664857, Math.toRadians(310));
+    private final Pose shootPose = new Pose(90, 84.45590230664857, Math.toRadians(230));
 
-    private final Pose endPose = new Pose(56.10854816824964, 130.9118046132971, Math.toRadians(270));
+    private final Pose endPose = new Pose(90, 130.9118046132971, Math.toRadians(270));
 
     private PathChain driveStartshoot;
 
     private PathChain driveShootend;
 
-    double amount = 1.0;
+    double amount = 22.0;
     double lastTime;
 
 
@@ -88,7 +88,7 @@ public class blueGoal extends OpMode {
                     }
                 }
                 break;
-                //transition to next state
+            //transition to next state
             case SHOOT_POS_END_POS:
 
             default:
