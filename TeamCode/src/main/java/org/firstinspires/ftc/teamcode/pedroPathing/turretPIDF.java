@@ -14,7 +14,7 @@ public class turretPIDF {
     private static final double MAX_COUNTS_PER_SEC = (6000.0 / 60.0) * TICKS_PER_REV;
 
     // PIDF gains for inner velocity loop
-    private static  double kP = 3.0;
+    private static  double kP = 4.25;
     private static  double kI = 0.0;
     private static  double kD = 0.1;
     private static final double kF = 32767.0 / MAX_COUNTS_PER_SEC;

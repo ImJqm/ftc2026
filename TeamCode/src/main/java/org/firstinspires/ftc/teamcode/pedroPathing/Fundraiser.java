@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -11,12 +9,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.Toggle;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 
-@TeleOp(name = "Launch Mechanism")
-public class LaunchMechanism extends OpMode {
+@TeleOp(name = "Fundraiser")
+public class Fundraiser extends OpMode {
 
     Servo outTakeServo;
     turretPIDF tuner;
@@ -85,7 +82,7 @@ public class LaunchMechanism extends OpMode {
 
     PIDFINCREMENT pidf;
 
-    boolean reverse = true;
+    boolean reverse = false;
 
     double maxOmega = 100 * Math.PI * 2.0;
     double targetOmega = amount * maxOmega;
@@ -136,24 +133,23 @@ public class LaunchMechanism extends OpMode {
     public void loop() {
 
 
-
         shooting = bToggle.update(gamepad1.b);
         targetOmega = ((shooting) ? 1.0 : 0.0) * maxOmega * amount;
         tuner.update(targetOmega);
 
 
-        slowmode = aToggle2.update(gamepad2.a);
+        slowmode = aToggle2.update(gamepad1.a);
 
-        double y = -gamepad2.left_stick_y;
-        double x = gamepad2.left_stick_x;
-        double rx = gamepad2.right_stick_x;
+        double y = -gamepad1.left_stick_y;
+        double x = gamepad1.left_stick_x;
+        double rx = gamepad1.right_stick_x;
 
 
 
-        if (gamepad2.options) {
+        if (gamepad1.options) {
             imu.resetYaw();
         }
-       // telemetry.addData("Commanded Velocity:, ", tuner.getCommandedVelocity());
+        // telemetry.addData("Commanded Velocity:, ", tuner.getCommandedVelocity());
         telemetry.addData("Target Velocity:, ", tuner.getTargetVelocity());
         telemetry.addData("Alleged Measured Velocity:, ", tuner.getMeasuredVelocity());
         telemetry.addData("Top Motor Velocity:", topMotor.getVelocity());
@@ -171,26 +167,6 @@ public class LaunchMechanism extends OpMode {
         } else {
             gamepad1.rumbleBlips(0);
         }
-
-
-        if (gamepad1.right_bumper && !counterActuating) {
-            counterActuating = true;
-            countercount = 0;
-           // outtakePower+=0.05;
-            amount+=0.01;
-        } else if (countercount>1) {
-            counterActuating = false;
-        }
-
-        if (gamepad1.left_bumper && !counterActuating) {
-            counterActuating = true;
-            countercount = 0;
-            amount-=0.01;
-            outtakePower-=0.05;
-        } else if (countercount>1) {
-            counterActuating = false;
-        }
-
 
 
         if (gamepad1.dpad_up && !launching2 && !launching1) {
@@ -216,18 +192,16 @@ public class LaunchMechanism extends OpMode {
             midtakeMotor.setPower(0.0);
         }
 
-        reverse = bToggle2.update(gamepad2.b);
+
         telemetry.addData("Reverse BooL:", reverse);
         telemetry.addData("Intake Dir:", intakeMotor.getDirection());
         telemetry.addData("MidTake Dir:", midtakeMotor.getDirection());
-        if (gamepad2.right_trigger > 0.3 && !launching2 && !launching1) {
-            if (!reverse) {
-                intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-                midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-            } else {
-                intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-                midtakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-            }
+        if (gamepad1.right_trigger > 0.3 && !launching2 && !launching1) {
+
+            intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+            midtakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+           // intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+           //midtakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
             launching2 = true;
 
             intakeMotor.setPower(1.0);
@@ -267,36 +241,6 @@ public class LaunchMechanism extends OpMode {
         }
 
         servoCount++;
-
-        if (gamepad1.leftStickButtonWasPressed()) {
-            pidf = pidf.nextState();
-        }
-
-        if (gamepad1.dpadRightWasPressed()) {
-            switch (pidf) {
-                case P:
-                    tuner.changeP(0.01);
-                    break;
-                case I:
-                    tuner.changeI(0.01);
-                    break;
-                case D:
-                    tuner.changeD(0.01);
-                    break;
-            }
-        } else if (gamepad1.dpadLeftWasPressed()) {
-            switch (pidf) {
-                case P:
-                    tuner.changeP(-0.01);
-                    break;
-                case I:
-                    tuner.changeI(-0.01);
-                    break;
-                case D:
-                    tuner.changeD(-0.01);
-                    break;
-            }
-        }
 
 
         telemetry.addData("Servo: ", outTakeServo.getPosition());
