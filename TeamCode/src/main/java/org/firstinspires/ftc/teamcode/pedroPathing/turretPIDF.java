@@ -3,24 +3,22 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
 
-
 public class turretPIDF {
 
     private final DcMotorEx motorChain;
     private final DcMotorEx motorBevel;
 
-    private static final double TICKS_PER_REV = 28.0;     // PPR at output
+    private static final double TICKS_PER_REV = 28.0;
     private static final double TWO_PI = 2.0 * Math.PI;
     private static final double MAX_COUNTS_PER_SEC = (6000.0 / 60.0) * TICKS_PER_REV;
 
-    // PIDF gains for inner velocity loop
-    private static  double kP = 4.25;
-    private static  double kI = 0.0;
-    private static  double kD = 0.1;
-    private static final double kF = 32767.0 / MAX_COUNTS_PER_SEC;
+    // ===== PIDF Gains =====
+    private double kP = 0.0;
+    private double kI = 0.0;
+    private double kD = 0.0;
 
-    // Boost factor for outer loop
-    private static final double kBoost = 0.50; // 0.1-0.5 recommended; increases acceleration
+    // Start with theoretical kF — tune this first
+    private double kF = 32767.0 / MAX_COUNTS_PER_SEC;
 
     private double lastTargetVelocity = 0.0;
 
@@ -34,39 +32,31 @@ public class turretPIDF {
         motorChain.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         motorBevel.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
+        applyPIDF();
+    }
+
+    // ===== Apply Gains to Hardware =====
+    public void applyPIDF() {
         motorChain.setVelocityPIDFCoefficients(kP, kI, kD, kF);
         motorBevel.setVelocityPIDFCoefficients(kP, kI, kD, kF);
     }
 
-    /**
-     * Update turret velocity with boosted target for fast acceleration
-     * @param targetOmegaRadPerSec true desired target angular velocity (rad/s)
-     */
+    // ===== Update Velocity =====
     public void update(double targetOmegaRadPerSec) {
 
-        motorChain.setVelocityPIDFCoefficients(kP, kI, kD, kF);
-        motorBevel.setVelocityPIDFCoefficients(kP, kI, kD, kF);
-
-        // Convert rad/s → encoder ticks/sec
         double targetVelocity = targetOmegaRadPerSec * TICKS_PER_REV / TWO_PI;
 
-        // Current measured velocity
-        double measuredVelocity = (motorChain.getVelocity() + motorBevel.getVelocity()) / 2.0;
+        targetVelocity = Range.clip(targetVelocity,
+                -MAX_COUNTS_PER_SEC,
+                MAX_COUNTS_PER_SEC);
 
-        // ===== Outer loop boost =====
-        double boostedVelocity = targetVelocity + kBoost * (targetVelocity - measuredVelocity);
-
-        // Clamp to motor limits
-        boostedVelocity = Range.clip(boostedVelocity, -MAX_COUNTS_PER_SEC, MAX_COUNTS_PER_SEC);
-
-        // ===== Inner loop =====
-        motorChain.setVelocity(boostedVelocity);
-        motorBevel.setVelocity(boostedVelocity);
+        motorChain.setVelocity(targetVelocity);
+        motorBevel.setVelocity(targetVelocity);
 
         lastTargetVelocity = targetVelocity;
     }
 
-    // Telemetry helpers
+    // ===== Telemetry Helpers =====
     public double getMeasuredVelocity() {
         return (motorChain.getVelocity() + motorBevel.getVelocity()) / 2.0;
     }
@@ -75,29 +65,13 @@ public class turretPIDF {
         return lastTargetVelocity;
     }
 
-    public void changeP(double delta) {
-        kP +=delta;
-    }
+    public double getP() { return kP; }
+    public double getI() { return kI; }
+    public double getD() { return kD; }
+    public double getF() { return kF; }
 
-    public double getP() {
-        return kP;
-    }
-
-    public void changeI(double delta) {
-        kI +=delta;
-    }
-
-    public double getI() {
-        return kI;
-    }
-
-    public void changeD(double delta) {
-        kD +=delta;
-    }
-
-    public double getD() {
-        return kD;
-    }
-
-
+    public void changeP(double delta) { kP += delta; }
+    public void changeI(double delta) { kI += delta; }
+    public void changeD(double delta) { kD += delta; }
+    public void changeF(double delta) { kF += delta; }
 }

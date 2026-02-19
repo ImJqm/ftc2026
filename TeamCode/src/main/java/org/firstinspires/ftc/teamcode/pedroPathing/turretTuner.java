@@ -13,24 +13,22 @@ public class turretTuner extends OpMode {
     DcMotorEx motorBevel;
     Servo outTakeServo;
 
-    double amount;
     turretPIDF tuner;
+
+    double amount = 1.0;
 
     @Override
     public void init() {
 
         motorChain = hardwareMap.get(DcMotorEx.class, "topLauncher");
-        motorChain.setDirection(DcMotorSimple.Direction.REVERSE);
-
         motorBevel = hardwareMap.get(DcMotorEx.class, "sideLauncher");
 
-        tuner = new turretPIDF(motorChain, motorBevel);
         motorChain.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        tuner = new turretPIDF(motorChain, motorBevel);
 
         outTakeServo = hardwareMap.get(Servo.class, "servo0");
         outTakeServo.setPosition(0.33);
-
-        amount = 1.0;  // start at full scaling
     }
 
     @Override
@@ -38,24 +36,38 @@ public class turretTuner extends OpMode {
 
         double joystick = gamepad1.right_stick_x;
 
-        if (gamepad1.rightBumperWasPressed()) {
-            amount += 0.01;
-        }
-        if (gamepad1.leftBumperWasPressed()) {
-            amount -= 0.01;
-        }
+        // ===== Scale Adjustment =====
+        if (gamepad1.rightBumperWasPressed()) amount += 0.01;
+        if (gamepad1.leftBumperWasPressed())  amount -= 0.01;
 
-        outTakeServo.setPosition(gamepad1.dpad_up ? 0.1 : 0.33);
+        // ===== Live PID Tuning =====
+        if (gamepad1.yWasPressed()) tuner.changeP(0.1);
+        if (gamepad1.aWasPressed()) tuner.changeP(-0.1);
 
-        double maxOmega = 100 * Math.PI * 2.0;
+        if (gamepad1.bWasPressed()) tuner.changeD(0.01);
+        if (gamepad1.xWasPressed()) tuner.changeD(-0.01);
+
+        if (gamepad1.dpadUpWasPressed()) tuner.changeF(1.0);
+        if (gamepad1.dpadDownWasPressed()) tuner.changeF(-1.0);
+
+        tuner.applyPIDF();
+
+        // ===== Servo Test =====
+        outTakeServo.setPosition(gamepad1.dpad_left ? 0.1 : 0.33);
+
+        // ===== Target Velocity =====
+        double maxOmega = 2.0 * Math.PI * 100; // adjust to real max
         double targetOmega = amount * joystick * maxOmega;
 
         tuner.update(targetOmega);
 
-        telemetry.addData("Joystick", joystick);
-        telemetry.addData("Omega Target", targetOmega);
+        // ===== Telemetry =====
+        telemetry.addData("Target Omega", targetOmega);
         telemetry.addData("Measured Velocity", tuner.getMeasuredVelocity());
-        telemetry.addData("Amount Scale", amount);
+        telemetry.addData("P", tuner.getP());
+        telemetry.addData("D", tuner.getD());
+        telemetry.addData("F", tuner.getF());
+        telemetry.addData("Scale", amount);
         telemetry.update();
     }
 }
