@@ -44,7 +44,7 @@ public class Fundraiser extends OpMode {
 
     boolean slowmode = false;
 
-    double amount = 0.25;
+    double amount = 0.45;
     int count = 0;
 
     int countercount;

@@ -62,8 +62,11 @@ public class turretTuner extends OpMode {
         tuner.update(targetOmega);
 
         // ===== Telemetry =====
-        telemetry.addData("Target Omega", targetOmega);
-        telemetry.addData("Measured Velocity", tuner.getMeasuredVelocity());
+        telemetry.addData("Alleged Target Omega", targetOmega);
+        telemetry.addData("Alleged Target Velocity", tuner.getTargetVelocity());
+        telemetry.addData("Alleged Measured Velocity", tuner.getMeasuredVelocity());
+        telemetry.addData("Chain Motor Velocity:", motorChain.getVelocity());
+        telemetry.addData("Bevel Motor Velocity:", motorBevel.getVelocity());
         telemetry.addData("P", tuner.getP());
         telemetry.addData("D", tuner.getD());
         telemetry.addData("F", tuner.getF());

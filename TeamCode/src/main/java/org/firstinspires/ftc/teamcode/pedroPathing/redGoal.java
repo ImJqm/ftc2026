@@ -46,7 +46,7 @@ public class redGoal extends OpMode {
 
     private final Pose shootPose = new Pose(90, 84.45590230664857, Math.toRadians(230));
 
-    private final Pose endPose = new Pose(90, 130.9118046132971, Math.toRadians(270));
+    private final Pose endPose = new Pose(90, 130.9118046132971, Math.toRadians(360));
 
     private PathChain driveStartshoot;
 
@@ -126,19 +126,14 @@ public class redGoal extends OpMode {
 
     @Override
     public void loop() {
-
-        double currentTime = getRuntime();
-        double dt = currentTime - lastTime;
-        lastTime = currentTime;
-
+        
         follower.update();
-        flywheel.update(dt);
+        flywheel.update();
         statePathUpdate();
 
-        telemetry.addData("Command Velocity:", flywheel.getCommandedVelocity());
+
         telemetry.addData("Target Velocity:", flywheel.getTargetVelocity());
-        //telemetry.addData("Top Motor Velocity:", flywheel.getVelocity(0));
-        //telemetry.addData("Side Motor Velocity:", flywheel.getVelocity(1));
+        telemetry.addData("Measured Velocity:", flywheel.getMeasuredVelocity());
         telemetry.addData("Flywheel State: ", flywheel.getState());
         telemetry.addData("Path State: ", pathState.toString());
         telemetry.addData("X: ", follower.getPose().getX());

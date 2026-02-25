@@ -47,7 +47,7 @@ public class LaunchMechanism extends OpMode {
 
     boolean slowmode = false;
 
-    double amount = 0.25;
+    double amount = 0.45;
     int count = 0;
 
     int countercount;
@@ -76,8 +76,13 @@ public class LaunchMechanism extends OpMode {
         D {
             @Override
             public PIDFINCREMENT nextState() {
-                return P;
+                return F;
             }
+        },
+
+        F {
+            @Override
+            public PIDFINCREMENT nextState() {return P;}
         };
 
         public abstract PIDFINCREMENT nextState() ;
@@ -139,6 +144,7 @@ public class LaunchMechanism extends OpMode {
 
         shooting = bToggle.update(gamepad1.b);
         targetOmega = ((shooting) ? 1.0 : 0.0) * maxOmega * amount;
+        tuner.applyPIDF();
         tuner.update(targetOmega);
 
 
@@ -165,8 +171,10 @@ public class LaunchMechanism extends OpMode {
         telemetry.addData("PIDF: P ", tuner.getP());
         telemetry.addData("PIDF: I ", tuner.getI());
         telemetry.addData("PIDF: D ", tuner.getD());
+        telemetry.addData("PIDF: F ", tuner.getF());
+        telemetry.addData("Curr Change:", pidf);
 
-        if (Math.abs(sideMotor.getVelocity()) > 1200 && Math.abs(topMotor.getVelocity()) > 1200) {
+        if (Math.abs(sideMotor.getVelocity()) > 1225 && Math.abs(topMotor.getVelocity()) > 1225) {
             gamepad1.rumbleBlips(3);
         } else {
             gamepad1.rumbleBlips(0);
@@ -272,31 +280,37 @@ public class LaunchMechanism extends OpMode {
             pidf = pidf.nextState();
         }
 
-        if (gamepad1.dpadRightWasPressed()) {
+       /* if (gamepad1.dpadRightWasPressed()) {
             switch (pidf) {
                 case P:
-                    tuner.changeP(0.01);
+                    tuner.changeP(0.1);
                     break;
                 case I:
                     tuner.changeI(0.01);
                     break;
                 case D:
-                    tuner.changeD(0.01);
+                    tuner.changeD(0.1);
+                    break;
+                case F:
+                    tuner.changeF(1.0);
                     break;
             }
         } else if (gamepad1.dpadLeftWasPressed()) {
             switch (pidf) {
                 case P:
-                    tuner.changeP(-0.01);
+                    tuner.changeP(-0.1);
                     break;
                 case I:
                     tuner.changeI(-0.01);
                     break;
                 case D:
-                    tuner.changeD(-0.01);
+                    tuner.changeD(-0.1);
+                    break;
+                case F:
+                    tuner.changeF(-1.0);
                     break;
             }
-        }
+        }*/
 
 
         telemetry.addData("Servo: ", outTakeServo.getPosition());

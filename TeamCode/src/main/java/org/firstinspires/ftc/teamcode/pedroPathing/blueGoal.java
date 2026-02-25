@@ -46,7 +46,7 @@ public class blueGoal extends OpMode {
 
     private final Pose shootPose = new Pose(54.436906377204885, 84.45590230664857, Math.toRadians(310));
 
-    private final Pose endPose = new Pose(56.10854816824964, 130.9118046132971, Math.toRadians(270));
+    private final Pose endPose = new Pose(56.10854816824964, 130.9118046132971, Math.toRadians(180));
 
     private PathChain driveStartshoot;
 
@@ -127,25 +127,20 @@ public class blueGoal extends OpMode {
     @Override
     public void loop() {
 
-        double currentTime = getRuntime();
-        double dt = currentTime - lastTime;
-        lastTime = currentTime;
-
         follower.update();
-        flywheel.update(dt);
+        flywheel.update();
         statePathUpdate();
 
-        telemetry.addData("Command Velocity:", flywheel.getCommandedVelocity());
+
         telemetry.addData("Target Velocity:", flywheel.getTargetVelocity());
-        //telemetry.addData("Top Motor Velocity:", flywheel.getVelocity(0));
-        //telemetry.addData("Side Motor Velocity:", flywheel.getVelocity(1));
+        telemetry.addData("Measured Velocity:", flywheel.getMeasuredVelocity());
         telemetry.addData("Flywheel State: ", flywheel.getState());
         telemetry.addData("Path State: ", pathState.toString());
         telemetry.addData("X: ", follower.getPose().getX());
         telemetry.addData("Y: ", follower.getPose().getY());
         telemetry.addData("Heading: ", follower.getPose().getHeading());
         telemetry.addData("Path Time: ", pathTimer.getElapsedTimeSeconds());;
-
+        telemetry.addData("State Time: ", flywheel.getStateTime());;
     }
 }
 
